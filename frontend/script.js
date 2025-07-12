@@ -3,6 +3,11 @@ let currentCode = '';
 let currentLanguage = 'python';
 let history = [];
 
+// Particles system
+let particles = [];
+let mouseX = 0;
+let mouseY = 0;
+
 // API Configuration
 const API_BASE_URL = 'http://localhost:5000';
 
@@ -37,11 +42,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load history on page load
     loadHistory();
     
+    // Initialize particles
+    initParticles();
+    
     // Add keyboard shortcuts
     document.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.key === 'Enter') {
             generateCode();
         }
+    });
+    
+    // Track mouse movement for particles
+    document.addEventListener('mousemove', function(e) {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
     });
 });
 
@@ -333,6 +347,53 @@ function showSuccess(message) {
 // Show error
 function showError(message) {
     alert(message); // Simple error display - could be enhanced with a proper modal
+}
+
+// Initialize particles
+function initParticles() {
+    const container = document.getElementById('particlesContainer');
+    const particleCount = 100;
+    
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 20 + 's';
+        particle.style.animationDuration = (20 + Math.random() * 15) + 's';
+        container.appendChild(particle);
+        
+        // Store particle reference
+        particles.push(particle);
+    }
+    
+    // Start particle animation
+    animateParticles();
+}
+
+// Animate particles with mouse interaction
+function animateParticles() {
+    particles.forEach((particle, index) => {
+        const rect = particle.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        // Calculate distance from mouse
+        const distance = Math.sqrt(
+            Math.pow(mouseX - centerX, 2) + Math.pow(mouseY - centerY, 2)
+        );
+        
+        // Add subtle mouse interaction
+        if (distance < 100) {
+            const angle = Math.atan2(mouseY - centerY, mouseX - centerX);
+            const force = (100 - distance) / 100;
+            const moveX = Math.cos(angle) * force * 2;
+            const moveY = Math.sin(angle) * force * 2;
+            
+            particle.style.transform += ` translate(${moveX}px, ${moveY}px)`;
+        }
+    });
+    
+    requestAnimationFrame(animateParticles);
 }
 
 // Close modal
