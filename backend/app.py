@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 import os
 import json
@@ -12,17 +12,12 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend
 
-# Model setup - Using a smaller, faster model
-CHECKPOINT = "microsoft/DialoGPT-small"  # Much smaller model (~117MB)
+# Model setup - Using StarCoder2-3B for code generation
+CHECKPOINT = "bigcode/starcoder2-3b"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Use quantization if on limited hardware
-quantization_config = BitsAndBytesConfig(load_in_8bit=True)
 tokenizer = AutoTokenizer.from_pretrained(CHECKPOINT)
-model = AutoModelForCausalLM.from_pretrained(
-    CHECKPOINT,
-    quantization_config=quantization_config,
-).to(DEVICE)
+model = AutoModelForCausalLM.from_pretrained(CHECKPOINT).to(DEVICE)
 
 # File-based persistence
 HISTORY_FILE = "history.json"
@@ -52,62 +47,20 @@ def generate_code():
     if not spec:
         return jsonify({'error': 'No spec provided'}), 400
 
-    # For the smaller model, we'll use a simpler approach
-    # Since DialoGPT is not specifically trained for code, we'll provide a basic response
-    prompt = f"Write code for: {spec}\n\nHere's the code:\n"
-    
-    try:
-        inputs = tokenizer.encode(prompt, return_tensors="pt").to(DEVICE)
-        outputs = model.generate(
-            inputs, 
-            max_new_tokens=200, 
-            do_sample=True, 
-            temperature=0.7,
-            pad_token_id=tokenizer.eos_token_id
-        )
-        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
-        # Extract the generated part (remove the prompt)
-        code = generated_text[len(prompt):].strip()
-        
-        # If the model didn't generate good code, provide a template
-        if not code or len(code) < 10:
-            code = f"""# {spec}
-# This is a template for the requested functionality
-# You may need to customize this based on your specific requirements
+    # Prepare prompt for StarCoder2 (not instruction-tuned, so use code-style prompt)
+    prompt = f"""# {spec}\n"""
+    inputs = tokenizer.encode(prompt, return_tensors="pt").to(DEVICE)
+    outputs = model.generate(inputs, max_new_tokens=256, do_sample=True, temperature=0.7)
+    code = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-def example_function():
-    \"\"\"
-    {spec}
-    \"\"\"
-    # TODO: Implement the functionality
-    pass
-
-# Example usage
-if __name__ == "__main__":
-    example_function()"""
-        
-    except Exception as e:
-        # Fallback template if model fails
-        code = f"""# {spec}
-# Generated code template
-
-def main():
-    \"\"\"
-    {spec}
-    \"\"\"
-    # TODO: Implement the functionality
-    print("Functionality to be implemented")
-    return None
-
-if __name__ == "__main__":
-    main()"""
+    # Extract only the generated part (remove the prompt)
+    generated_code = code[len(prompt):].strip()
 
     # Track prompt and output with timestamp
     entry = {
         'id': str(uuid.uuid4()),
         'spec': spec, 
-        'code': code,
+        'code': generated_code,
         'timestamp': datetime.now().isoformat()
     }
     
@@ -115,7 +68,7 @@ if __name__ == "__main__":
     history.append(entry)
     save_history(history)
 
-    return jsonify({'code': code})
+    return jsonify({'code': generated_code})
 
 @app.route('/execute_code', methods=['POST'])
 def execute_code():
