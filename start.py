@@ -25,8 +25,7 @@ def run_frontend():
 
 def open_browser():
     """Open browser after a delay"""
-    time.sleep(3)  # Wait for servers to start
-    webbrowser.open('http://localhost:8000')
+    webbrowser.open_new('http://localhost:8000')
 
 def main():
     print("🚀 Starting Spec to Code AI with StarCoder2 Model...")
