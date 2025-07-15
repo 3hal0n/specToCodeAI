@@ -7,6 +7,7 @@ let history = [];
 let particles = [];
 let mouseX = 0;
 let mouseY = 0;
+let animationId = null; // Track animation frame for cleanup
 
 // API Configuration
 const API_BASE_URL = 'http://localhost:5000';
@@ -29,6 +30,14 @@ const historyContainer = document.getElementById('historyContainer');
 const loadingModal = document.getElementById('loadingModal');
 const successModal = document.getElementById('successModal');
 const successMessage = document.getElementById('successMessage');
+// Model selection elements
+
+// Utility function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
@@ -62,6 +71,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Generate code from specification
 async function generateCode() {
     const spec = specInput.value.trim();
+    // Always use HuggingFace, no provider selection
+    const provider = 'huggingface';
     
     if (!spec) {
         showError('Please enter a specification');
@@ -71,12 +82,13 @@ async function generateCode() {
     showLoading();
     
     try {
+        const body = { spec, provider };
         const response = await fetch(`${API_BASE_URL}/generate_code`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ spec: spec })
+            body: JSON.stringify(body)
         });
         
         const data = await response.json();
@@ -236,20 +248,29 @@ function addToHistory(spec, code) {
 
 // Load history from storage
 function loadHistory() {
-    const savedHistory = localStorage.getItem('specToCodeHistory');
-    if (savedHistory) {
-        history = JSON.parse(savedHistory);
-        displayHistory();
+    try {
+        const savedHistory = localStorage.getItem('specToCodeHistory');
+        if (savedHistory) {
+            history = JSON.parse(savedHistory);
+            displayHistory();
+        }
+    } catch (error) {
+        console.error('Error loading history:', error);
+        history = [];
     }
 }
 
 // Save history to storage
 function saveHistoryToStorage() {
-    // Keep only last 50 items
-    if (history.length > 50) {
-        history = history.slice(0, 50);
+    try {
+        // Keep only last 50 items
+        if (history.length > 50) {
+            history = history.slice(0, 50);
+        }
+        localStorage.setItem('specToCodeHistory', JSON.stringify(history));
+    } catch (error) {
+        console.error('Error saving history:', error);
     }
-    localStorage.setItem('specToCodeHistory', JSON.stringify(history));
 }
 
 // Display history
@@ -268,17 +289,17 @@ function displayHistory() {
         <div class="history-item" onclick="loadHistoryItem(${item.id})">
             <div class="history-item-header">
                 <div class="history-item-title">
-                    ${item.spec.substring(0, 50)}${item.spec.length > 50 ? '...' : ''}
+                    ${escapeHtml(item.spec.substring(0, 50))}${item.spec.length > 50 ? '...' : ''}
                 </div>
                 <div class="history-item-time">
                     ${formatTimestamp(item.timestamp)}
                 </div>
             </div>
             <div class="history-item-spec">
-                ${item.spec}
+                ${escapeHtml(item.spec)}
             </div>
             <div class="history-item-code">
-                ${item.code.substring(0, 200)}${item.code.length > 200 ? '...' : ''}
+                ${escapeHtml(item.code.substring(0, 200))}${item.code.length > 200 ? '...' : ''}
             </div>
         </div>
     `).join('');
@@ -393,7 +414,15 @@ function animateParticles() {
         }
     });
     
-    requestAnimationFrame(animateParticles);
+    animationId = requestAnimationFrame(animateParticles);
+}
+
+// Cleanup function for particles
+function cleanupParticles() {
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
 }
 
 // Close modal
@@ -406,4 +435,7 @@ window.addEventListener('click', function(event) {
     if (event.target.classList.contains('modal')) {
         event.target.style.display = 'none';
     }
-}); 
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', cleanupParticles); 

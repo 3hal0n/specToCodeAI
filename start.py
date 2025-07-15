@@ -13,7 +13,7 @@ from threading import Thread, Timer
 
 def run_backend():
     """Run the Flask backend server with AI model"""
-    print("Starting backend server with StarCoder2 model...")
+    print("Starting backend server with HuggingFace (distilgpt2) and OpenAI support...")
     backend_dir = os.path.join(os.getcwd(), 'backend')
     subprocess.run([sys.executable, 'app.py'], cwd=backend_dir)
 
@@ -28,11 +28,11 @@ def open_browser():
     webbrowser.open_new('http://localhost:8000')
 
 def main():
-    print("🚀 Starting Spec to Code AI with StarCoder2 Model...")
+    print("🚀 Starting Spec to Code AI")
     print("=" * 60)
-    print("🤖 Using StarCoder2-3B AI model for code generation")
-    print("📦 Model size: ~12GB (first run will download)")
-    print("⏱️  Initial startup may take 45+ minutes for model download")
+    print("🤖 Using HuggingFace distilgpt2 (local, ~500MB) or OpenAI GPT-3.5-turbo (API)")
+    print("📦 distilgpt2 will download on first run (~500MB, fast)")
+    print("🔑 To use OpenAI, set OPENAI_API_KEY in your .env file")
     print("=" * 60)
     
     # Check if we're in the right directory

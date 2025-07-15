@@ -32,7 +32,7 @@ if __name__ == '__main__':
         print("Press Ctrl+C to stop the server")
         
         # Open browser after a short delay
-        Timer(1.5, open_browser).start()
+        # Timer(1.5, open_browser).start()
         
         try:
             httpd.serve_forever()

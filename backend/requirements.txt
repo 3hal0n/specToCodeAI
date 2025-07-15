@@ -4,3 +4,4 @@ transformers
 torch
 accelerate
 bitsandbytes 
+python-dotenv 

@@ -1,11 +1,12 @@
 # Spec to Code AI
 
-A powerful AI-powered application that transforms natural language specifications into working code. Built with modern web technologies and powered by StarCoder2, this tool provides an intuitive interface for code generation, execution, and management.
+A powerful AI-powered application that transforms natural language specifications into working code. Built with modern web technologies and powered by HuggingFace (distilgpt2, local) or OpenAI (API), this tool provides an intuitive interface for code generation, execution, and management.
 
 ## Features
 
 ### 🎯 **Core Functionality**
 - **Natural Language to Code**: Transform specifications into working code using AI
+- **Model Selection**: Choose between a local HuggingFace model (distilgpt2, free) or OpenAI's GPT-3.5-turbo (API key required)
 - **Multi-language Support**: Generate code in Python, JavaScript, Java, PHP, Ruby, Go, and more
 - **Real-time Code Execution**: Test generated code immediately in a safe environment
 - **Code History**: Persistent storage of all generated code with timestamps
@@ -29,8 +30,8 @@ A powerful AI-powered application that transforms natural language specification
 ### Prerequisites
 - Python 3.8+
 - Node.js (for JavaScript code execution)
-- 8GB+ RAM (for AI model loading)
-- Stable internet connection (for initial model download)
+- 2GB+ RAM (for HuggingFace model loading)
+- Stable internet connection (for initial model download or OpenAI API)
 
 ### Installation
 
@@ -63,7 +64,7 @@ A powerful AI-powered application that transforms natural language specification
    ```
    This will start both backend and frontend servers automatically.
    
-   **Note:** First run will download the StarCoder2-3B model (~12GB) which may take 45+ minutes depending on your internet connection.
+   **Note:** First run will download the distilgpt2 model (~500MB) which is much smaller and faster than previous versions. You can also use OpenAI's GPT-3.5-turbo by selecting it in the UI and providing your API key.
 
 ## Usage
 
@@ -111,7 +112,9 @@ Write a function to find all permutations of a string
 
 ### Code Generation
 - `POST /generate_code`
-  - Body: `{"spec": "your specification"}`
+  - Body: `{"spec": "your specification", "provider": "huggingface|openai", "openai_api_key": "sk-..."}`
+    - `provider` (optional): "huggingface" (default, local, free) or "openai" (requires API key)
+    - `openai_api_key` (required if provider is "openai"): Your OpenAI API key
   - Returns: `{"code": "generated code"}`
 
 ### Code Execution

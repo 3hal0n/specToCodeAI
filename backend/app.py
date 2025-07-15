@@ -8,16 +8,16 @@ import subprocess
 import tempfile
 import uuid
 from datetime import datetime
+import requests  # For OpenAI API
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend
 
-# Model setup - Using StarCoder2-3B for code generation
-CHECKPOINT = "bigcode/starcoder2-3b"
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-tokenizer = AutoTokenizer.from_pretrained(CHECKPOINT)
-model = AutoModelForCausalLM.from_pretrained(CHECKPOINT).to(DEVICE)
+# Model setup - Only OpenAI and HuggingFace Inference API are supported now
+# Remove local model loading for HuggingFace
 
 # File-based persistence
 HISTORY_FILE = "history.json"
@@ -28,7 +28,8 @@ def load_history():
         try:
             with open(HISTORY_FILE, 'r') as f:
                 return json.load(f)
-        except:
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"Error loading history: {e}")
             return []
     return []
 
@@ -44,31 +45,49 @@ def save_history(history):
 def generate_code():
     data = request.get_json()
     spec = data.get('spec', '')
+    # Ignore provider, always use HuggingFace
+    # provider = data.get('provider', 'huggingface')
+
     if not spec:
         return jsonify({'error': 'No spec provided'}), 400
 
-    # Prepare prompt for StarCoder2 (not instruction-tuned, so use code-style prompt)
-    prompt = f"""# {spec}\n"""
-    inputs = tokenizer.encode(prompt, return_tensors="pt").to(DEVICE)
-    outputs = model.generate(inputs, max_new_tokens=256, do_sample=True, temperature=0.7)
-    code = tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-    # Extract only the generated part (remove the prompt)
-    generated_code = code[len(prompt):].strip()
+    # Use HuggingFace Inference API only
+    hf_api_key = os.getenv('HF_API_KEY')
+    if not hf_api_key:
+        return jsonify({'error': 'HuggingFace API key not set in backend environment.'}), 500
+    try:
+        hf_url = "https://api-inference.huggingface.co/models/gpt2"
+        headers = {
+            "Authorization": f"Bearer {hf_api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "inputs": f"# {spec}\n"
+        }
+        response = requests.post(hf_url, headers=headers, json=payload)
+        if response.status_code != 200:
+            return jsonify({'error': f'HuggingFace API error: {response.text}'}), 500
+        result = response.json()
+        # HuggingFace API returns a list of dicts with 'generated_text'
+        if isinstance(result, list) and 'generated_text' in result[0]:
+            code = result[0]['generated_text']
+        else:
+            code = str(result)
+    except Exception as e:
+        return jsonify({'error': f'HuggingFace API call failed: {e}'}), 500
 
     # Track prompt and output with timestamp
     entry = {
         'id': str(uuid.uuid4()),
         'spec': spec, 
-        'code': generated_code,
-        'timestamp': datetime.now().isoformat()
+        'code': code.strip(),
+        'timestamp': datetime.now().isoformat(),
+        'provider': 'huggingface'
     }
-    
     history = load_history()
     history.append(entry)
     save_history(history)
-
-    return jsonify({'code': generated_code})
+    return jsonify({'code': code.strip()})
 
 @app.route('/execute_code', methods=['POST'])
 def execute_code():
@@ -91,6 +110,7 @@ def execute_code():
 
 def execute_python_code(code):
     """Execute Python code safely"""
+    temp_file = None
     try:
         # Create a temporary file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
@@ -105,9 +125,6 @@ def execute_python_code(code):
             timeout=30  # 30 second timeout
         )
         
-        # Clean up
-        os.unlink(temp_file)
-        
         if result.returncode == 0:
             return jsonify({'output': result.stdout})
         else:
@@ -117,9 +134,17 @@ def execute_python_code(code):
         return jsonify({'error': 'Code execution timed out'}), 408
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    finally:
+        # Clean up temporary file
+        if temp_file and os.path.exists(temp_file):
+            try:
+                os.unlink(temp_file)
+            except OSError:
+                pass  # File might already be deleted
 
 def execute_javascript_code(code):
     """Execute JavaScript code using Node.js"""
+    temp_file = None
     try:
         # Create a temporary file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as f:
@@ -134,9 +159,6 @@ def execute_javascript_code(code):
             timeout=30  # 30 second timeout
         )
         
-        # Clean up
-        os.unlink(temp_file)
-        
         if result.returncode == 0:
             return jsonify({'output': result.stdout})
         else:
@@ -146,6 +168,13 @@ def execute_javascript_code(code):
         return jsonify({'error': 'Code execution timed out'}), 408
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    finally:
+        # Clean up temporary file
+        if temp_file and os.path.exists(temp_file):
+            try:
+                os.unlink(temp_file)
+            except OSError:
+                pass  # File might already be deleted
 
 @app.route('/history', methods=['GET'])
 def get_history():
