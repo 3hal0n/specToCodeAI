@@ -1,6 +1,0 @@
-flask
-flask-cors
-transformers
-torch
-accelerate
-bitsandbytes 
