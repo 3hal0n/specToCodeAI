@@ -83,7 +83,7 @@ async function generateCode() {
     
     try {
         const body = { spec, provider };
-        const response = await fetch(`${API_BASE_URL}/generate_code`, {
+        const response = await fetch(`${API_BASE_URL}/generate-code`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
