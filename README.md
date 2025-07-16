@@ -3,10 +3,6 @@
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg?logo=python&logoColor=white) 
 ![Streamlit](https://img.shields.io/badge/Built%20With-Streamlit-orange?logo=streamlit) 
 ![License](https://img.shields.io/badge/License-MIT-green.svg) 
-![GitHub stars](https://img.shields.io/github/stars/3hal0n/specToCodeAI?style=social) 
-![GitHub issues](https://img.shields.io/github/issues/3hal0n/specToCodeAI) 
-![GitHub last commit](https://img.shields.io/github/last-commit/3hal0n/specToCodeAI)
-
 
 Spec to Code AI is a web application that uses AI to transform natural language specifications into working code snippets in various programming languages. The backend leverages a HuggingFace code generation model, while the frontend provides a modern, interactive UI for users to input specifications, select a language, and receive generated code.
 
