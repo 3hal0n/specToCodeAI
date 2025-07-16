@@ -40,9 +40,9 @@ def generate_code():
     try:
         system_instruction = (
             "You are a coding assistant that converts feature specifications into clean, secure code. "
-             "Always respond in the requested language and do not include any unrelated content. "
+            "Always respond in the requested language and do not include any unrelated content. "
         )
-        prompt = f"{system_instruction}Write a {language} function for the following specification: {spec}"
+        prompt = f"{system_instruction}Write only the {language} code for the following specification. Do not include explanations, comments, or code in other languages: {spec}"
         if model == MULTI_MODEL_NAME:
             tokenizer = multi_tokenizer
             generator = multi_generator
@@ -64,6 +64,31 @@ def generate_code():
         # Remove the input prompt from the output if present
         if code.startswith(prompt):
             code = code[len(prompt):].lstrip('\n')
+        # Output validation for PHP
+        if language.lower() == 'php' and '<?php' not in code:
+            return jsonify({'error': 'The model did not generate valid PHP code. Please try again or rephrase your specification.'}), 500
+        # Output validation for Python (fibonacci)
+        if language.lower() == 'python' and 'fibonacci' in spec.lower():
+            if 'def' not in code or 'fibonacci' not in code:
+                return jsonify({'error': 'The model did not generate a valid Python Fibonacci function. Please try again or rephrase your specification.'}), 500
+        # Output validation for JavaScript
+        if language.lower() == 'javascript' and not any(kw in code for kw in ['function', '=>', 'const', 'let', 'var']):
+            return jsonify({'error': 'The model did not generate valid JavaScript code. Please try again or rephrase your specification.'}), 500
+        # Output validation for Java
+        if language.lower() == 'java' and not any(kw in code for kw in ['public class', 'public static void main']):
+            return jsonify({'error': 'The model did not generate valid Java code. Please try again or rephrase your specification.'}), 500
+        # Output validation for Ruby
+        if language.lower() == 'ruby' and not ('def' in code and 'end' in code):
+            return jsonify({'error': 'The model did not generate valid Ruby code. Please try again or rephrase your specification.'}), 500
+        # Output validation for Go
+        if language.lower() == 'go' and not any(kw in code for kw in ['package main', 'func']):
+            return jsonify({'error': 'The model did not generate valid Go code. Please try again or rephrase your specification.'}), 500
+        # Output validation for C++
+        if language.lower() == 'cpp' and not any(kw in code for kw in ['#include', 'int main']):
+            return jsonify({'error': 'The model did not generate valid C++ code. Please try again or rephrase your specification.'}), 500
+        # Output validation for C
+        if language.lower() == 'c' and not any(kw in code for kw in ['#include', 'int main']):
+            return jsonify({'error': 'The model did not generate valid C code. Please try again or rephrase your specification.'}), 500
         return jsonify({'code': code.strip()})
     except Exception as e:
         return jsonify({'error': f'Code generation failed: {str(e)}'}), 500
