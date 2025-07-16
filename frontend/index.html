@@ -1,3 +1,4 @@
+ <!-- python -m http.server 8000 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,6 +28,26 @@
             <div class="input-section">
                 <h2><i class="fas fa-edit"></i> Specification Input</h2>
                 <div class="input-container">
+                    <div class="model-selection">
+                        <label for="modelSelect">Select Model:</label>
+                        <select id="modelSelect">
+                            <option value="Salesforce/codegen-350M-mono">Salesforce/codegen-350M-mono</option>
+                            <option value="Salesforce/codegen-350M-multi">Salesforce/codegen-350M-multi</option>
+                        </select>
+                    </div>
+                    <div class="model-selection">
+                        <label for="languageSelect">Select Language:</label>
+                        <select id="languageSelect">
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="java">Java</option>
+                            <option value="ruby">Ruby</option>
+                            <option value="php">PHP</option>
+                            <option value="go">Go</option>
+                            <option value="cpp">C++</option>
+                            <option value="c">C</option>
+                        </select>
+                    </div>
                     <textarea 
                         id="specInput" 
                         placeholder="Describe what you want to build...&#10;&#10;Examples:&#10;- Create a Python function that calculates fibonacci numbers&#10;- Build a React component for a todo list&#10;- Write a JavaScript function to validate email addresses"
@@ -61,7 +82,7 @@
                             </button>
                         </div>
                     </div>
-                    <pre><code class="language-python" id="codeOutput"></code></pre>
+                    <pre><code class="language-" id="codeOutput"></code></pre>
                 </div>
             </div>
 

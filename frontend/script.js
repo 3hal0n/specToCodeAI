@@ -31,6 +31,8 @@ const loadingModal = document.getElementById('loadingModal');
 const successModal = document.getElementById('successModal');
 const successMessage = document.getElementById('successMessage');
 // Model selection elements
+const languageSelect = document.getElementById('languageSelect');
+const modelSelect = document.getElementById('modelSelect');
 
 // Utility function to escape HTML
 function escapeHtml(text) {
@@ -71,8 +73,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // Generate code from specification
 async function generateCode() {
     const spec = specInput.value.trim();
-    // Always use HuggingFace, no provider selection
     const provider = 'huggingface';
+    const language = languageSelect.value;
+    const model = modelSelect.value;
     
     if (!spec) {
         showError('Please enter a specification');
@@ -82,7 +85,7 @@ async function generateCode() {
     showLoading();
     
     try {
-        const body = { spec, provider };
+        const body = { spec, provider, language, model };
         const response = await fetch(`${API_BASE_URL}/generate-code`, {
             method: 'POST',
             headers: {
@@ -113,6 +116,7 @@ async function generateCode() {
 function displayCode(code, language) {
     codeOutput.textContent = code;
     languageLabel.textContent = language.charAt(0).toUpperCase() + language.slice(1);
+    codeOutput.className = 'language-' + language;
     
     // Update Prism.js highlighting
     Prism.highlightElement(codeOutput);
