@@ -70,10 +70,6 @@ Spec to Code AI is a web application that uses AI to transform natural language 
 
 ---
 
-## License
-MIT (or specify your license)
-
----
 
 ## Credits
 - [Salesforce/codegen-350M-mono](https://huggingface.co/Salesforce/codegen-350M-mono)
